@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hunger Games</title>
+
+    <style>
+        html {
+            font-size: 180%;
+        }
+
+        body {
+            background-color: #0b0b0b;
+            color: #f1f1f1;
+            font-family: 'Segoe UI', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .tribute-img {
+            aspect-ratio: 1/1;
+            object-fit: cover;
+        }
+
+
+        h1,
+        h2,
+        h3 {
+            color: #d4af37;
+        }
+
+        input,
+        button {
+            padding: 20px 15px;
+            border: none;
+            border-radius: 6px;
+            margin: 4px;
+            font-size: 15px;
+        }
+
+        input[type="text"],
+        input[type="url"] {
+            width: 200px;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #d4af37;
+            color: #000;
+            font-weight: bold;
+            transition: background 0.3s;
+            padding: 15px;
+        }
+
+        button:hover {
+            background-color: #b8962e;
+        }
+
+        #preview {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border: 2px solid #d4af37;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 10px;
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+        .card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #log {
+            margin: 20px;
+            text-align: left;
+            max-width: 700px;
+            margin: 20px auto;
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        p,
+        strong {
+            line-height: 1.5;
+        }
+
+        .tribute-name {
+            color: #d4af37;
+            font-weight: bold;
+        }
+    </style>
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"> <!-- Prevent zooming -->
+    <meta name="apple-mobile-web-app-capable" content="yes"> <!-- Enable standalone mode -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black"> <!-- Status bar style -->
+    <link rel="manifest" href="manifest.json"> <!-- Link to manifest file -->
+    <meta name="theme-color" content="#d4af37"> <!-- Theme color for browser UI -->
+    <meta name="apple-mobile-web-app-capable" content="yes"> <!-- Enable web app capable -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> <!-- Status bar style for iOS -->
+    <!-- Le ultime due righe permettono a iOS di aprire la PWA a schermo intero. -->
+    <!-- PWA = Progressive Web App, cioè un'app web che si comporta come un'app nativa e che posso vedere nella schermata home -->
+
+</head>
+
+<body>
+
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+
+    <!-- 1️⃣ Schermata inserimento -->
+    <section id="insertScreen">
+        <h1>Inserisci i tuoi 22 Tributi</h1>
+        <input type="text" id="nomeTributo" placeholder="Nome del tributo"><br>
+        <input type="url" id="urlImg" placeholder="Oppure incolla link immagine"><br>
+        <input type="file" id="fileImg" accept="image/*" capture="camera">
+        <img id="preview"><br>
+        <button id="addTributo">➕ Aggiungi Tributo</button>
+        <button id="demoGame">🎬 Gioco Dimostrativo</button>
+        <p id="counter">0/22 tributi inseriti</p>
+        <button id="submitTributi" class="hidden">✅ Submit</button>
+    </section>
+
+    <!-- 2️⃣ Schermata riepilogo -->
+    <section id="summaryScreen" class="hidden">
+        <h2>I tuoi Tributi</h2>
+        <div id="grid" class="grid"></div>
+        <button id="startSim">🏹 Inizia la Simulazione</button>
+    </section>
+
+    <!-- 3️⃣ Schermata simulatore -->
+    <section id="simulatorScreen" class="hidden">
+        <h2 id="phase">Fase: Bloodbath 🌅 Giorno 1</h2>
+        <div id="status"></div>
+        <button id="nextTurn">Avanza Turno</button>
+        <button id="resetGameBtn" onclick="resetGame()">🔄 Reset Game</button>
+        <button id="showWinnerBtn" class="hidden">🎉 Mostra Vincitore</button>
+        <div id="log"></div>
+    </section>
+
+    <script>
+
+
+        //log delle modifiche:
+        //v1.0: creazione base del gioco con inserimento tributi 08/11/2024
+        //v1.1: aggiunta simulazione con eventi casuali 9/11/2024
+        //v1.2: aggiunta immagini tributi nel log eventi 10/11/2024
+        //v1.2.1: aggiunta chance a eventi 10/11/2024
+        //v1.3: aggiunta funzione reset gioco 11/11/2024
+        //v1.3.1: miglioramenti vari al codice 11/11/2024
+        //v1.4: aggiunta evidenziazione nomi tributi nel log eventi 12/11/2024
+        //v1.5: aggiunta nomi evidenziati anche nel messaggio di eliminazione e vincitore 13/11/2024
+        //v1.5.1: aggiunta gestione popup vincitore 13/11/2024
+
+        // ==============================
+        //INIZIO VERSIONI PER iOS
+        // ==============================
+
+
+
+
+
+
+
+
+        //tutte le variabili utili al codice
+
+        const tributi = [];
+        const MAX_TRIBUTI = 22; // numero massimo di tributi
+        let players = []; // array dei nomi dei tributi
+        let isDay = true; // true = giorno, false = notte
+        let alive = []; // array dei giocatori vivi
+        let deadPlayers = []; // array dei giocatori morti
+        let phaseIndex = 0; // 0=Bloodbath, 1=Fase Intermedia, 2=Finale
+        let alliances = []; // per tenere traccia delle alleanze
+        let day = 1;
+
+
+
+
+
+
+
+
+
+
+        // ==============================
+        // GESTIONE INSERIMENTO TRIBUTI
+        // ==============================
+        const nomeInput = document.getElementById("nomeTributo"); // input per il nome del tributo
+        const urlInput = document.getElementById("urlImg"); // input per l'URL dell'immagine
+        const fileInput = document.getElementById("fileImg"); // input per il file immagine
+        const preview = document.getElementById("preview"); // immagine di anteprima
+        const counter = document.getElementById("counter"); // contatore dei tributi inseriti
+        const submitBtn = document.getElementById("submitTributi"); // bottone per submit dei tributi
+        document.getElementById("nextTurn").addEventListener("click", nextTurn); // bottone per avanzare il turno
+
+        urlInput.addEventListener("input", () => { // quando cambia l'input URL
+            preview.src = urlInput.value.trim(); // imposta l'anteprima all'URL inserito
+
+
+            preview.onerror = () => { // gestione errore caricamento immagine
+                alert("Safari non può caricare questa immagine da URL. Salvala sul dispositivo e ricaricala dalla galleria.");
+                preview.src = "";         // nasconde l’immagine rotta
+                preview.style.display = "none"; // evita quadrati vuoti
+            };
+
+            preview.onload = () => { // quando l'immagine è caricata correttamente
+                preview.style.display = "block"; // la rimostro solo se valida
+            };
+        });
+
+        //da r. 227 (urlInput.addEventListener) a r. 240 (}); importante perchè se no:
+
+        // le immagini remote vengono bloccate spesso da Safari su iOS
+        // l’immagine assume stato “caricata” anche quando non lo è 
+        // non compare nessun errore visibile 
+        // il layout rimane con un riquadro vuoto 
+
+
+        // ==============================
+        // GIOCO DIMOSTRATIVO
+        // ==============================
+        const demoTributi = [
+            { nome: "Katniss", img: "https://via.placeholder.com/100?text=Katniss" },
+            { nome: "Peeta", img: "https://via.placeholder.com/100?text=Peeta" },
+            { nome: "Cato", img: "https://via.placeholder.com/100?text=Cato" },
+            { nome: "Clove", img: "https://via.placeholder.com/100?text=Clove" },
+            { nome: "Rue", img: "https://via.placeholder.com/100?text=Rue" },
+            { nome: "Thresh", img: "https://via.placeholder.com/100?text=Thresh" },
+            { nome: "Glimmer", img: "https://via.placeholder.com/100?text=Glimmer" },
+            { nome: "Marvel", img: "https://via.placeholder.com/100?text=Marvel" },
+            { nome: "Cinna", img: "https://via.placeholder.com/100?text=Cinna" },
+            { nome: "Effie", img: "https://via.placeholder.com/100?text=Effie" },
+            { nome: "Finnick", img: "https://via.placeholder.com/100?text=Finnick" },
+            { nome: "Annie", img: "https://via.placeholder.com/100?text=Annie" },
+            { nome: "Johanna", img: "https://via.placeholder.com/100?text=Johanna" },
+            { nome: "Beetee", img: "https://via.placeholder.com/100?text=Beetee" },
+            { nome: "Wiress", img: "https://via.placeholder.com/100?text=Wiress" },
+            { nome: "Peeta2", img: "https://via.placeholder.com/100?text=Peeta2" },
+            { nome: "Katniss2", img: "https://via.placeholder.com/100?text=Katniss2" },
+            { nome: "Cato2", img: "https://via.placeholder.com/100?text=Cato2" },
+            { nome: "Clove2", img: "https://via.placeholder.com/100?text=Clove2" },
+            { nome: "Rue2", img: "https://via.placeholder.com/100?text=Rue2" },
+            { nome: "Thresh2", img: "https://via.placeholder.com/100?text=Thresh2" },
+            { nome: "Glimmer2", img: "https://via.placeholder.com/100?text=Glimmer2" },
+        ];
+
+
+        //===============================
+        // GESTIONE BOTTONE DEMO
+        //===============================
+        document.getElementById("demoGame").addEventListener("click", () => {
+            // Svuota eventuali tributi esistenti
+            tributi.length = 0;
+            demoTributi.forEach(t => tributi.push({ nome: t.nome, img: t.img }));
+
+            // Aggiorna contatore
+            counter.textContent = `${tributi.length}/22 tributi inseriti`;
+            submitBtn.classList.remove("hidden");
+
+            // Simula click su Submit (inizializza players e alive)
+            players = tributi.map(t => t.nome);
+            alive = [...players];
+
+            // Aggiorna griglia riepilogo
+            const grid = document.getElementById("grid");
+            grid.innerHTML = "";
+            tributi.forEach(t => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.innerHTML = `<img src="${t.img}" alt="${t.nome}"><p>${t.nome}</p>`;
+                grid.appendChild(card);
+            });
+
+            // Mostra la schermata riepilogo
+            document.getElementById("insertScreen").classList.add("hidden");
+            document.getElementById("summaryScreen").classList.remove("hidden");
+
+            // Mostra il bottone start
+            document.getElementById("startSim").classList.remove("hidden");
+        });
+
+
+
+
+
+
+
+        // Anteprima immagine
+        fileInput.addEventListener("change", () => {  // quando cambia il file input
+            const file = fileInput.files[0];  // prendo il primo file selezionato
+            if (file) {  // se c'è un file
+                const reader = new FileReader();  // creo un oggetto FileReader per leggere il file
+                reader.onload = e => {  // quando il file è caricato
+                    preview.src = e.target.result;  // imposto la sorgente dell'immagine di anteprima
+                    preview.style.display = "block";  // mostro l'anteprima
+                };
+                reader.readAsDataURL(file);  // leggo il file come URL dati
+            }
+        });
+        urlInput.addEventListener("input", () => {  // quando cambia il valore dell'input URL
+            if (urlInput.value.trim() !== "") {  // se l'input non è vuoto
+                preview.src = urlInput.value.trim();  // imposto la sorgente dell'immagine di anteprima
+                preview.style.display = "block";  // mostro l'anteprima
+            }
+        });
+
+
+
+
+
+
+
+
+
+        // Aggiungi tributo
+        document.getElementById("addTributo").addEventListener("click", () => {  // quando clicco il bottone per aggiungere tributo
+            const nome = nomeInput.value.trim();  // prendo il valore dell'input nome e rimuovo spazi vuoti
+            let img = urlInput.value.trim();  // prendo il valore dell'input URL e rimuovo spazi vuoti
+            if (!nome) {  // controllo input vuoto
+                alert("Inserisci un nome valido!");
+                return;
+            }
+
+            // Se non c'è URL ma c'è file
+            if (!img && fileInput.files[0]) {  // se non c'è URL ma c'è un file selezionato
+                const reader = new FileReader();  // creo un oggetto FileReader per leggere il file
+                reader.onload = e => {  // quando il file è caricato
+                    addTributoObj(nome, e.target.result);  // aggiungo il tributo con il nome e l'immagine letta
+                };
+                reader.readAsDataURL(fileInput.files[0]);  // leggo il file come URL dati
+                return;
+            }
+
+            if (!img) {  // controllo immagine vuota
+                alert("Inserisci un'immagine o un link!");
+                return;
+            }
+
+            addTributoObj(nome, img);  // aggiungo il tributo con il nome e l'immagine
+        });
+
+
+
+
+
+
+
+        function addTributoObj(nome, img) {  // funzione per aggiungere il tributo all'array
+            if (tributi.length >= MAX_TRIBUTI) {  // controllo numero massimo tributi
+                alert("Hai già inserito 22 tributi!");
+                return;
+            }
+            tributi.push({ nome, img });  // aggiungo l'oggetto tributo all'array
+            counter.textContent = `${tributi.length}/22 tributi inseriti`;  // aggiorno il contatore
+            nomeInput.value = "";  // resetto gli input
+            urlInput.value = "";
+            fileInput.value = "";
+            preview.style.display = "none";  // nascondo l'anteprima
+
+            if (tributi.length === MAX_TRIBUTI) {  // se ho raggiunto il numero massimo di tributi
+                submitBtn.classList.remove("hidden");  // mostro il bottone per submit
+            }
+        }
+
+
+
+
+
+
+
+        // Passaggio alla schermata riepilogo
+        submitBtn.addEventListener("click", () => {  // quando clicco il bottone per submit
+            document.getElementById("insertScreen").classList.add("hidden");  // nascondo la schermata di inserimento
+            document.getElementById("summaryScreen").classList.remove("hidden");  // mostro la schermata di riepilogo
+            const grid = document.getElementById("grid");  // prendo la griglia per mostrare i tributi
+            grid.innerHTML = "";  // resetto la griglia
+            tributi.forEach(t => {  // ciclo su ogni tributo
+                const card = document.createElement("div");  // creo una card per ogni tributo
+                card.classList.add("card");  // aggiungo la classe card
+                card.innerHTML = `<img src="${t.img}" alt="${t.nome}"><p>${t.nome}</p>`;  // imposto l'immagine e il nome del tributo
+                grid.appendChild(card);  // aggiungo la card alla griglia
+            });
+            players = tributi.map(t => t.nome);  // creo l'array dei nomi dei tributi
+            alive = [...players];  // inizializzo l'array dei giocatori vivi
+        });
+
+
+
+
+
+
+
+        // ==============================
+        // INIZIO SIMULAZIONE
+        // ==============================
+        document.getElementById("startSim").addEventListener("click", () => {  // quando clicco il bottone per iniziare la simulazione
+            document.getElementById("summaryScreen").classList.add("hidden");  // nascondo la schermata di riepilogo
+            document.getElementById("simulatorScreen").classList.remove("hidden");  // mostro la schermata del simulatore
+            updateStatus();  // aggiorno lo stato iniziale
+        });
+
+        console.log(players);
+
+
+
+
+
+
+
+
+        //effetti degli eventi
+        // deathA: il giocatore A muore
+        // killB: il giocatore A uccide il giocatore B
+        // injuryA: il giocatore A si procura una ferita
+        // ally: il giocatore A si allea con il giocatore B
+        // none: nessun effetto
+        // KillMass: il giocatore A uccide più giocatori e se stesso
+
+
+
+
+        //eventi suddivisi per fasi
+        const phases = [
+            {
+                name: "Bloodbath", events: [
+                    { text: "{A} muore durante la confusione iniziale!", effect: "deathA", chance: 0.7 },
+                    { text: "{A} scappa illeso dalla confusione.", effect: "none", chance: 0.1 },
+                    { text: "{A} ferisce {B} gravemente e lo uccide!", effect: "killB", chance: 0.6 },
+                    { text: "{A} raccoglie delle risorse vicino alla Cornucopia", effect: "none", chance: 0.1 },
+                    { text: "{A} trova un rifugio vicino alla Cornucopia", effect: "none", chance: 0.2 },
+                    { text: "{A} pesta una mina uccidendo {B} e {C}", effect: "KillMass", chance: 0.6 },
+                    { text: "{A} si allea con {B} per sopravvivere.", effect: "ally", chance: 0.4 },
+                    { text: "{A} viene colpito da una freccia e muore.", effect: "deathA", chance: 0.6 },
+                    { text: "{A} si procura una ferita leggera durante la confusione.", effect: "injuryA", chance: 0.5 },
+                    { text: "{A} riesce a rubare le armi di {B}.", effect: "none", chance: 0.2 },
+                    { text: "{A} condivide le risorse con {B}", effect: "none", chance: 0.2 }
+
+                ]
+            },
+            {
+                name: "Fase Intermedia", events: [
+                    { text: "{A} esplora il territorio e trova cibo.", effect: "none", chance: 0.3 },
+                    { text: "{A}, {B}, {C}, e {D} vanno a caccia di altri tributi.", effect: "ally", chance: 0.3 },
+                    { text: "{A} e {B} formano un'alleanza.", effect: "ally", chance: 0.3 },
+                    { text: "{A} trova una sorgente d'acqua.", effect: "none", chance: 0.3 },
+                    { text: "{A} trova una un rifugio naturale.", effect: "none", chance: 0.3 },
+                    { text: "{A} viene attaccato con un esplosivo da {B} e muore.", effect: "deathA", chance: 0.2 },
+                    { text: "{A} attacca furtivamente {B} nel sonno e lo uccide.", effect: "killB", chance: 0.2 },
+                    { text: "{A} riceve una glock da uno sponsor anonimo e uccide {B} e {C} e poi si suicida.", effect: "KillMass", chance: 0.2 },
+                    { text: "{A} costruisce un rifugio sicuro.", effect: "none", chance: 0.6 },
+                    { text: "{A} abbraccia {B} per scaldarsi.", effect: "none", chance: 0.4 },
+                    { text: "{A} si procura una ferita leggera.", effect: "injuryA", chance: 0.6 },
+                    { text: "{A} piange talmente tanto da essere esausto.", effect: "none", chance: 0.4 },
+                    { text: "{A} pesta una mina e muore.", effect: "deathA", chance: 0.4 },
+                    { text: "{A} osserva {B} da lontano pensando a cosa fare.", effect: "none", chance: 0.3 },
+                    { text: "{A} si addormenta sotto un albero .", effect: "none", chance: 0.3 }
+                ]
+            },
+            {
+                name: "Finale", events: [
+                    { text: "{A} attacca {B} e {B} muore.", effect: "killB" },
+                    { text: "{A} e {B} si alleano per eliminare altri tributi.", effect: "ally" },
+                    { text: "{A} trova un nascondiglio sicuro.", effect: "none" },
+                    { text: "{A} viene colpito da una trappola mortale e muore.", effect: "deathA" },
+                    { text: "{A} e {B} combattono fino alla morte di {B}.", effect: "killB" },
+                    { text: "{A} si nasconde e sopravvive alla giornata.", effect: "none" },
+                    { text: "{A} riesce a scappare da {B}.", effect: "none" },
+                    { text: "{A}, {B}, e {C} combattono tra loro.", effect: "none" }
+                ]
+            }
+        ];
+
+
+        function highlightTributeNames(text) { //funzione per evidenziare i nomi dei tributi nel testo degli eventi
+            players.forEach(name => { //per ogni nome nell'array dei giocatori
+                const regex = new RegExp(`\\b${name}\\b`, "g"); //creo una regex per trovare il nome esatto (\\b indica un confine di parola)
+                text = text.replace(regex, `<span class="tribute-name">${name}</span>`); //sostituisco il nome con una versione evidenziata usando uno span con classe tribute-name
+            });
+            return text; //ritorno il testo modificato
+        }
+
+
+        function createEventLogElement(text, participants) { //funzione per creare un elemento del log dell'evento con immagini dei tributi
+            const div = document.createElement("div"); //creo un nuovo elemento div
+            div.classList.add("event-log"); //aggiungo la classe event-log al div
+
+            // Contenitore immagini tributi
+            const imgContainer = document.createElement("div"); //creo un contenitore per le immagini
+            imgContainer.style.display = "flex"; //uso flexbox per allineare le immagini
+            imgContainer.style.justifyContent = "center"; //centro le immagini orizzontalmente
+            imgContainer.style.gap = "10px"; //spazio tra le immagini
+            imgContainer.style.marginBottom = "5px"; //margine inferiore
+
+            participants.forEach(name => { //per ogni partecipante all'evento
+                const tributo = tributi.find(t => t.nome === name); //trovo l'oggetto tributo corrispondente al nome
+                if (tributo) { //se il tributo esiste
+                    const img = document.createElement("img"); //creo un nuovo elemento immagine
+                    img.src = tributo.img;  //imposto la sorgente dell'immagine
+                    img.alt = tributo.nome; //imposto il testo alternativo
+                    img.style.width = "40px";   //imposto la larghezza dell'immagine
+                    img.style.height = "40px";  //imposto l'altezza dell'immagine
+                    img.style.borderRadius = "50%"; //rendo l'immagine rotonda
+                    img.style.objectFit = "cover"; //adatto l'immagine al contenitore
+                    imgContainer.appendChild(img); //aggiungo l'immagine al contenitore
+                }
+            });
+
+            div.appendChild(imgContainer); //aggiungo il contenitore delle immagini al div principale
+
+            // Testo evento con nomi evidenziati
+            const p = document.createElement("p"); //creo un nuovo elemento paragrafo
+            p.innerHTML = highlightTributeNames(text); //evidenzio i nomi dei tributi nel testo dell'evento
+            div.appendChild(p); //aggiungo il paragrafo al div principale
+
+            return div; //ritorno il div completo dell'evento
+        }
+
+
+        function nextTurn() { //funzione per avanzare al turno successivo
+
+            console.log("entrati nella funzione");
+
+            if (players.length < 22) {  //controllo che tutti i tributi siano stati inseriti
+                alert("Devi inserire prima tutti i 22 tributi!");
+                return;
+            }
+            if (alive.length === 0) alive = [...players];  //se non ci sono giocatori vivi, resetto l'array dei vivi con tutti i giocatori
+            if (alive.length <= 1) return announceWinner();  //se c'è un solo giocatore vivo, annuncio il vincitore e termino la funzione
+
+            const currentPhase = phases[phaseIndex];  //prendo la fase attuale basandosi sull'indice della fase
+            const turnLog = [];  //array per tenere traccia degli eventi del turno
+            const availablePlayers = [...alive];  //copio l'array dei giocatori vivi in un nuovo array per tenere traccia di chi è disponibile per gli eventi
+
+            while (availablePlayers.length > 0) { //finché ci sono giocatori disponibili
+                const event = currentPhase.events[Math.floor(Math.random() * currentPhase.events.length)];  //seleziono un evento casuale dalla fase attuale
+                if (event.chance && Math.random() > event.chance) continue;  //se l'evento ha una probabilità associata e non viene soddisfatta, salto all'iterazione successiva
+
+                const placeholders = [...event.text.matchAll(/\{([A-Z])\}/g)].map(m => m[1]);  //estraggo i segnaposto (A, B, C, ecc.) dal testo dell'evento
+                if (availablePlayers.length < placeholders.length) continue;  //se non ci sono abbastanza giocatori disponibili per riempire i segnaposto, salto all'iterazione successiva
+
+                const participants = [];  //array per tenere traccia dei partecipanti all'evento
+                for (let i = 0; i < placeholders.length; i++) {  //per ogni segnaposto nell'evento
+                    const idx = Math.floor(Math.random() * availablePlayers.length);  //seleziono un indice casuale dall'array dei giocatori disponibili
+                    participants.push(availablePlayers[idx]);  //aggiungo il giocatore selezionato ai partecipanti
+                    availablePlayers.splice(idx, 1);  //rimuovo il giocatore selezionato dall'array dei disponibili per evitare duplicati
+                }
+
+                let text = event.text;  //testo dell'evento
+                placeholders.forEach((p, i) => text = text.replace(`{${p}}`, participants[i]));  //sostituisco i segnaposto nel testo con i nomi dei partecipanti
+
+                if (event.effect === "deathA") {
+                    // uccide il primo partecipante
+                    killPlayer(participants[0], text);
+                } else if (event.effect === "killB") {
+                    // uccide il secondo partecipante (attaccato dal primo)
+                    killPlayer(participants[1], `${participants[0]} uccide ${participants[1]}`);
+                } else if (event.effect === "ally") {
+                    // crea un'alleanza tra tutti i partecipanti dell'evento
+                    if (participants.length > 1) alliances.push([...participants]);
+                } else if (event.effect === "KillMass") {
+                    // <-- killMass: elimina TUTTI i partecipanti coinvolti
+                    participants.slice().forEach(p => {
+                        killPlayer(p, text);
+                    });
+                }
+
+
+                turnLog.push(createEventLogElement(text, participants)); //aggiungo l'evento al log del turno con i nomi evidenziati
+            }
+            const turnTitle = document.createElement("p"); //creo un nuovo elemento paragrafo per il titolo del turno
+            turnTitle.innerHTML = `<strong>${currentPhase.name} - ${isDay ? "Giorno" : "Notte"} ${day}:</strong>`; //creo il titolo del turno
+            document.getElementById("log").prepend(turnTitle); //aggiungo il titolo del turno al log
+
+            // Aggiungo tutti gli eventi con immagini
+            turnLog.forEach(e => document.getElementById("log").prepend(e));
+
+            if (!isDay) day++; //se è notte, incremento il giorno
+            isDay = !isDay; //inverto il valore di isDay per passare da giorno a notte o viceversa
+            if (day > 3 && phaseIndex === 0) phaseIndex = 1;  //se sono passati più di 3 giorni e siamo nella fase Bloodbath, passo alla Fase Intermedia
+            else if (day > 6 && phaseIndex === 1) phaseIndex = 2;  //se sono passati più di 6 giorni e siamo nella Fase Intermedia, passo alla Fase Finale
+
+            updateStatus();  //aggiorno lo stato dei giocatori vivi e morti
+        }
+
+        function killPlayer(name, reason) { //funzione per eliminare un giocatore
+            const idx = alive.indexOf(name);  //trovo l'indice del tributo nell'array dei vivi
+            if (idx !== -1) { //se il tributo è trovato nell'array dei vivi
+                alive.splice(idx, 1); // rimuove il tributo dall'array dei vivi
+                const p = document.createElement("p"); //crea un nuovo elemento paragrafo nel DOM
+                p.innerHTML = `<strong>💀 ${highlightTributeNames(name)} eliminato!</strong> (${highlightTributeNames(reason)})`; //imposto il contenuto HTML del paragrafo con il nome evidenziato e la ragione dell'eliminazione
+                document.getElementById("log").prepend(p); //aggiunge il paragrafo al div del log per mostrare l'eliminazione
+            }
+        }
+
+        function announceWinner() {
+            if (alive.length === 0) {
+                alert("Nessun vincitore.");
+                return;
+            }
+
+            const vincitore = tributi.find(t => t.nome === alive[0]);
+
+            const url = new URL("winner.html", window.location.href);
+            url.searchParams.set("nome", vincitore.nome);
+            url.searchParams.set("img", vincitore.img);
+
+            window.location.href = url.toString();
+        }
+
+
+        function updateStatus() { //funzione per aggiornare lo stato dei giocatori vivi e morti
+            document.getElementById("status").innerHTML =
+                `<strong>Vivi (${alive.length}):</strong> ${alive.map(a => `<span class="tribute-name">${a}</span>`).join(", ")} <br>
+                <strong>Alleanze:</strong> ${alliances.map(a => a.map(n => `<span class="tribute-name">${n}</span>`).join(" & ")).join("; ")}`; //aggiorna il div dello stato con i giocatori vivi e le alleanze
+
+            document.getElementById("phase").innerHTML = `Fase: ${phases[phaseIndex].name} ${isDay ? "🌅 Giorno" : "🌙 Notte"} ${day}`;
+        }
+
+        function resetGame() {
+            alive = [...players];
+            day = 1;
+            isDay = true;
+            phaseIndex = 0;
+            alliances = [];
+            document.getElementById("log").innerHTML = "";
+            updateStatus();
+        }
+
+        updateStatus();
+
+
+    </script>
+
+</body>
+
+</html>
